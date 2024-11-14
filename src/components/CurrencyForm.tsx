@@ -6,7 +6,7 @@ import {
   SelectChangeEvent,
   Typography,
 } from '@mui/material';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 import Select from './common/Select';
 import Button from './common/Button';
@@ -16,14 +16,18 @@ import {
   adaptCurrenciesToOptions,
   filterCurrenciesByCode,
 } from '../utils/currenciesUtils';
-import useFetchConvertResult from '../api/useFetchConvertResult';
+import useFetchConvertResult, { ConvertResult } from '../api/useFetchConvertResult';
 
 type ValidationError = {
   error: boolean;
   message: string;
 } | null;
 
-const CurrencyForm = () => {
+interface Props {
+  handleConversionSave: (conversion: ConvertResult) => void
+}
+
+const CurrencyForm = ({ handleConversionSave }: Props) => {
   const [selectedCurrencyFrom, setSelectedCurrencyFrom] = useState<
     string | undefined
   >(undefined);
@@ -110,87 +114,95 @@ const CurrencyForm = () => {
     setValidationError(null);
   };
 
-  return (
-    <Container sx={{ marginTop: 4 }}>
-      <Typography variant="h4" gutterBottom>
-        Select Currency to convert
-      </Typography>
-      {error ? (
-        <Typography>Something went wrong. Try Reload the page</Typography>
+  useEffect(() => {
+
+    if (!convertError && !convertLoading && convertResult) {
+      handleConversionSave(convertResult)
+    }
+
+  }, [convertResult])
+
+return (
+  <Container sx={{ marginTop: 4 }}>
+    <Typography variant="h4" gutterBottom>
+      Select Currency to convert
+    </Typography>
+    {error ? (
+      <Typography>Something went wrong. Try Reload the page</Typography>
+    ) : (
+      ''
+    )}
+    <Grid container spacing={2}>
+      {loading ? (
+        <Grid size={6}>
+          <Typography>Loading currencies...</Typography>
+        </Grid>
       ) : (
-        ''
+        <>
+          <Grid size={{ sm: 3, xs: 12 }}>
+            <Select
+              label="From"
+              name="from"
+              value={selectedCurrencyFrom}
+              options={filteredFromCurrencies}
+              onChange={handleSelectChange}
+            />
+          </Grid>
+          <Grid size={{ sm: 3, xs: 12 }}>
+            <Select
+              label="To"
+              name="to"
+              value={selectedCurrencyTo}
+              options={filteredToCurrencies}
+              onChange={handleSelectChange}
+            />
+          </Grid>
+        </>
       )}
       <Grid container spacing={2}>
-        {loading ? (
-          <Grid size={6}>
-            <Typography>Loading currencies...</Typography>
-          </Grid>
-        ) : (
-          <>
-            <Grid size={{ sm: 3, xs: 12 }}>
-              <Select
-                label="From"
-                name="from"
-                value={selectedCurrencyFrom}
-                options={filteredFromCurrencies}
-                onChange={handleSelectChange}
-              />
-            </Grid>
-            <Grid size={{ sm: 3, xs: 12 }}>
-              <Select
-                label="To"
-                name="to"
-                value={selectedCurrencyTo}
-                options={filteredToCurrencies}
-                onChange={handleSelectChange}
-              />
-            </Grid>
-          </>
-        )}
-        <Grid container spacing={2}>
-          <Grid size={5}>
-            <Input
-              type="number"
-              name="amount"
-              placeholder="Amount"
-              onChange={e => setAmount(e.target.value)}
-            />
-          </Grid>
-          <Grid size={2}>
-            <Button
-              onClick={handleConvertClick}
-              isDisabled={loading}
-              label="Convert"
-            />
-          </Grid>
+        <Grid size={5}>
+          <Input
+            type="number"
+            name="amount"
+            placeholder="Amount"
+            onChange={e => setAmount(e.target.value)}
+          />
         </Grid>
-        {validationError?.error && (
-          <Grid size={12}>
-            <Typography color="error">{validationError?.message}</Typography>
-          </Grid>
-        )}
+        <Grid size={2}>
+          <Button
+            onClick={handleConvertClick}
+            isDisabled={loading}
+            label="Convert"
+          />
+        </Grid>
       </Grid>
-      <Grid container size={12}>
-        {convertError && (
-          <Typography color="error" pt={2}>
-            {convertError}
-          </Typography>
-        )}
-        {!convertError && convertLoading && (
-          <Typography pt={2}>Converting...</Typography>
-        )}
-        {convertResult && !convertLoading && (
-          <Grid container pt={2} alignItems="center">
-            <Box sx={{ typography: 'body2' }}>Result: </Box>
-            <Box sx={{ typography: 'body1', fontWeight: 'bold' }} pl={2}>
-              {Number(convertResult?.value).toFixed(2)} &nbsp;(
-              {selectedCurrencyTo})
-            </Box>
-          </Grid>
-        )}
-      </Grid>
-    </Container>
-  );
+      {validationError?.error && (
+        <Grid size={12}>
+          <Typography color="error">{validationError?.message}</Typography>
+        </Grid>
+      )}
+    </Grid>
+    <Grid container size={12}>
+      {convertError && (
+        <Typography color="error" pt={2}>
+          {convertError}
+        </Typography>
+      )}
+      {!convertError && convertLoading && (
+        <Typography pt={2}>Converting...</Typography>
+      )}
+      {convertResult && !convertLoading && (
+        <Grid container pt={2} alignItems="center">
+          <Box sx={{ typography: 'body2' }}>Result: </Box>
+          <Box sx={{ typography: 'body1', fontWeight: 'bold' }} pl={2}>
+            {Number(convertResult?.value).toFixed(2)} &nbsp;(
+            {selectedCurrencyTo})
+          </Box>
+        </Grid>
+      )}
+    </Grid>
+  </Container>
+);
 };
 
 export default CurrencyForm;
